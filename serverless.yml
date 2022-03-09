@@ -1,0 +1,51 @@
+frameworkVersion: '3'
+service: sample-lambda
+
+package:
+  individually: true
+
+provider:
+  name: aws
+  profile: ${opt:aws-profile, "default"}
+  region: ${opt:region, "eu-central-1"}
+  stage: ${opt:stage, "dev"}
+  runtime: python3.8
+  memorySize: 128
+  timeout: 30
+  iam:
+    role: ${file(env/.env.sls.json):role}
+
+plugins:
+  - serverless-python-requirements
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    layer:
+      name: sample-aws-lambda-function
+      path: .
+      description: Sample AWS Lambda Function
+      compatibleRuntimes:
+        - python3.8
+
+functions:
+  sample_lambda:
+    package:
+      patterns:
+        # include
+        - 'src/**'
+        # do not include
+        - '!local_handler.py'
+        - '!.serverless/**'
+        - '!.vscode/**'
+        - '!.idea/**'
+        - '!local/**'
+        - '!node_modules/**'
+        - '!requirements.txt'
+        - '!package.json'
+        - '!package-lock.json'
+        - '!venv/**'
+    handler: lambda_1.handler.handler
+    environment: ${file(env/.env.sls.json):stage}
+
+    layers:
+      - { Ref: PythonRequirementsLambdaLayer }
